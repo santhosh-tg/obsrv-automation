@@ -291,7 +291,6 @@ spec:
       - metadata:
           name: historical-volume
         spec:
-          storageClassName: "{{- .Values.storageClass }}"
           accessModes:
             - ReadWriteOnce
           resources:
@@ -306,12 +305,12 @@ spec:
           memory: 2Gi
           cpu: 1
 
-      # volumes:
-      #   - name: historical-volume
-      #     persistentVolumeClaim:
-      #       claimName: historical-pv-claim
-      #   # - name: data-volume
-      #   #   emptyDir: {}
+      volumes:
+         - name: historical-volume
+           persistentVolumeClaim:
+             claimName: historical-pv-claim
+               #- name: data-volume
+               #emptyDir: {}
       # volumeMounts:
       #   - mountPath: "/var/segments"
       #     name: historical-volume
@@ -365,7 +364,7 @@ spec:
       - metadata:
           name: middlemanager-volume
         spec:
-          storageClassName: "{{- .Values.storageClass }}"
+          #storageClassName: "{{- .Values.storageClass }}"
           accessModes:
             - ReadWriteOnce
           resources:
@@ -385,10 +384,10 @@ spec:
       #     name: middlemanager-volume
       #   # - mountPath: /druid/data
       #   #   name: data-volume
-      # volumes:
-      #   - name: middlemanager-volume
-      #     persistentVolumeClaim:
-      #       claimName: middlemanager-pv-claim
+      volumes:
+         - name: middlemanager-volume
+           persistentVolumeClaim:
+             claimName: middlemanager-pv-claim
       #   # - name: data-volume
       #   #   emptyDir: {}
           
