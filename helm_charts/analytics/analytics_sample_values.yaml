@@ -1,0 +1,16 @@
+## This section has mandatory variables
+## You must provide a value for these
+## If you don't provide a value for these variables, the chart installation will not proceed
+
+
+## Can be one of - azure, aws, gcloud
+cloud_service_provider: "azure"
+
+## Public storage bucket details
+cloud_public_storage_accountname: "cloud_public_storage_accountname"
+cloud_public_storage_secret: "cloud_public_storage_secret"
+
+## Private storage bucket details
+cloud_private_storage_accountname: "cloud_private_storage_accountname"
+cloud_private_storage_secret: "cloud_private_storage_secret"
+
