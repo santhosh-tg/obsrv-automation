@@ -42,7 +42,7 @@ exhaust_api_consumer_ids: exhaust_api_consumer_ids
 channel_data_exhaust_bucket: "telemetry-data-store"
 public_data_exhaust_bucket: "datasets"
 redis_connection: "redis-master.dev.svc.cluster.local"
-redis_port: "6389"
+redis_port: "6379"
 lp_composite_search_host: "elasticsearch.dev.svc.cluster.local"
 druid_connection: "http://druid.dev.svc.cluster.local:8081/"
 kafka_connection: "kafka.dev.svc.cluster.local:9092"
