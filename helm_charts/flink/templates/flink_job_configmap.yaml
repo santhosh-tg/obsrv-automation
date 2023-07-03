@@ -7,8 +7,169 @@ metadata:
     app: flink
 data:
   base-config: |+
-{{ .Values.base_config | indent 4 }}
-{{- $name := .Release.Name }}
-{{ index .Values $name | toYaml | indent 2 }}
+    kafka {
+        broker-servers = "{{ .Values.kafka_host }}:9092"
+        producer.broker-servers = "{{ .Values.kafka_host }}:9092"
+        consumer.broker-servers = "{{ .Values.kafka_host }}:9092"
+        zookeeper = "{{ .Values.zookeeper_host }}:2181"
+        producer {
+          max-request-size = 1572864
+          batch.size = 98304
+          linger.ms = 10
+          compression = snappy
+        }
+      }
+      job {
+        env = "{{ .Values.env_name }}"
+        enable.distributed.checkpointing = yes
+        statebackend {
+          blob {
+            storage {
+              account = "{{ .Values.cloud_private_storage_accountname }}.blob.core.windows.net"
+              container = "{{ .Values.cloud_storage_flink_bucketname }}"
+              checkpointing.dir = "checkpoint"
+            }
+          }
+          base.url = "wasbs://"${job.statebackend.blob.storage.container}"@"${job.statebackend.blob.storage.account}"/"${job.statebackend.blob.storage.checkpointing.dir}
+          }
+      }
+      task {
+        parallelism = 1
+        consumer.parallelism = 1
+        checkpointing.compressed = true
+        checkpointing.interval = 60000
+        checkpointing.pause.between.seconds = 5000
+        restart-strategy.attempts = 3
+        restart-strategy.delay = 30000 # in milli-seconds
+      }
+      redisdb.connection.timeout = 30000
+      redis {
+        host = {{ .Values.redis_host }}
+        port = 6379
+      }
+      redis-meta {
+          host = {{ .Values.redis_host }}
+          port = 6379
+        }
+      postgres {
+        host = {{ .Values.postgres_host }}
+        port = 5432
+        maxConnections = 2
+        user = "{{ .Values.postgres_user }}"
+        password = "{{ .Values.postgres_password }}"
+      }
+      lms-cassandra {
+        host = "{{ .Values.cassandra_host }}"
+        port = "9042"
+      }
+
+  {{ if eq .Release.Name "pipeline-preprocessor" }}
+  pipeline-preprocessor: |+
+    include file("/data/flink/conf/base-config.conf")
+    kafka {
+      input.topic = {{ .Values.env_name }}.telemetry.raw
+      output.failed.topic = {{ .Values.env_name }}.telemetry.failed
+      output.primary.route.topic = {{ .Values.env_name }}.telemetry.unique
+      output.log.route.topic = {{ .Values.env_name }}.druid.events.log
+      output.error.route.topic = {{ .Values.env_name }}.telemetry.error
+      output.audit.route.topic = {{ .Values.env_name }}.telemetry.audit
+      output.duplicate.topic = {{ .Values.env_name }}.telemetry.duplicate
+      output.denorm.secondary.route.topic = {{ .Values.env_name }}.telemetry.unique.secondary
+      output.denorm.primary.route.topic = {{ .Values.env_name }}.telemetry.unique.primary
+      groupId = {{ .Values.env_name }}-pipeline-preprocessor-group
+    }
+    task {
+      consumer.parallelism = 1
+      downstream.operators.parallelism = 1
+    }
+    telemetry.schema.path="schemas/telemetry/3.0"
+    default.channel="b00bc992ef25f1a9a8d63291e20efc8d"
+    dedup.producer.included.ids = ["dev.sunbird.portal", "dev.sunbird.desktop"]
+    secondary.events = ["INTERACT", "IMPRESSION", "SHARE_ITEM"]
+    redis {
+      database {
+        duplicationstore.id = 7
+        key.expiry.seconds = 3600
+      }
+    }
+  {{- end }}
+
+  {{ if eq .Release.Name "druid-validator" }}
+  druid-validator: |+
+    include file("/data/flink/conf/base-config.conf")
+    kafka {
+      input.topic = {{ .Values.env_name }}.telemetry.denorm
+      output.telemetry.route.topic = {{ .Values.env_name }}.druid.events.telemetry
+      output.summary.route.topic = {{ .Values.env_name }}.druid.events.summary
+      output.failed.topic = {{ .Values.env_name }}.telemetry.failed
+      output.duplicate.topic = {{ .Values.env_name }}.telemetry.duplicate
+      groupId = {{ .Values.env_name }}-druid-validator-group
+    }
+    task {
+      consumer.parallelism = 1
+      downstream.operators.parallelism = 1
+      druid.validation.enabled = true
+      druid.deduplication.enabled = false
+    }
+    schema {
+      path {
+        telemetry = "schemas/telemetry"
+        summary = "schemas/summary"
+      }
+      file {
+        default = envelope.json
+        summary = me_workflow_summary.json
+        search = search.json
+      }
+    }
+    redis {
+      database {
+        duplicationstore.id = 8
+        key.expiry.seconds = 3600
+      }
+    }
+  {{- end }}
+  
+   {{ if eq .Release.Name "telemetry-extractor" }}
+  telemetry-extractor: |+
+    include file("/data/flink/conf/base-config.conf")
+    kafka {
+      input.topic = {{ .Values.env_name }}.telemetry.ingest
+      output.success.topic = {{ .Values.env_name }}.telemetry.raw
+      output.log.route.topic = {{ .Values.env_name }}.druid.events.log
+      output.duplicate.topic = {{ .Values.env_name }}.telemetry.extractor.duplicate
+      output.failed.topic = {{ .Values.env_name }}.telemetry.failed
+      output.batch.failed.topic = {{ .Values.env_name }}.telemetry.extractor.failed
+      output.assess.raw.topic = {{ .Values.env_name }}.telemetry.assess.raw
+      event.max.size = "1048576" # Max is only 1MB
+      groupId = {{ .Values.env_name }}-telemetry-extractor-group
+      producer {
+        max-request-size = 5242880
+      }
+    }
+    task {
+      consumer.parallelism = 1
+      downstream.operators.parallelism = 1
+    }
+    redis {
+      database {
+        duplicationstore.id = 1
+        key.expiry.seconds = 3600
+        contentstore.id = 5
+      }
+    }
+    redis-meta {
+        database {
+          contentstore.id = 5
+        }
+        host = {{ .Values.redis_host }}
+        port = 6379
+      }
+    redact.events.list = ["ASSESS","RESPONSE"]
+  {{- end }}
+
+  flink-conf: |+
+{{ .Values.flink_conf | indent 4 }}
+
   log4j_console_properties: |+
 {{ .Values.log4j_console_properties | indent 4 }}
