@@ -233,7 +233,7 @@ data:
     experimentService.redisEmptyValueExpirySeconds=86400
     redis.experimentIndex=9
     redis.deviceIndex=2
-    druid.coordinator.host="{ .Values.druid_connection }}"
+    druid.coordinator.host="{{ .Values.druid_connection }}"
     druid.healthcheck.url="druid/coordinator/v1/loadstatus"
     device.api.enable.debug.log=true
     kafka.device.register.topic=dev.events.deviceprofile
