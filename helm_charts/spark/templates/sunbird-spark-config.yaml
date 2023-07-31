@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-config
+data:
+  spark.conf: |
+    spark.master: {{ .Values.spark.master.url }}
+    spark.driver.memory: {{ .Values.spark.driver_memory }}
+    spark.executor.extraJavaOptions: {{ .Values.spark.executor_extraJavaOptions }}
+    spark.driver.extraJavaOptions: {{ .Values.spark.driver_extraJavaOptions }}
+    spark.executor.memory: {{ .Values.spark.executor_memory }}
+    spark.local.dir: {{ .Values.analytics.home }}/tmp

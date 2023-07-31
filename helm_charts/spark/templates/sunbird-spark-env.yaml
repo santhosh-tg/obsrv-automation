@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-env
+data:
+  #SPARK_MASTER_HOST: {{ .Values.spark.master.host }}
+  SPARK_DRIVER_MEMORY: {{ .Values.spark.driver.memory }}
+  SPARK_WORKER_CORES: {{ .Values.spark.worker.cores | quote }}
+  SPARK_WORKER_MEMORY: {{ .Values.spark.worker.memory }}
+  SPARK_WORKER_INSTANCES: {{ .Values.spark.worker.instances | quote }}
+  SPARK_EXECUTOR_MEMORY: {{ .Values.spark.executor.memory }}
+  SPARK_PUBLIC_DNS: {{ .Values.spark.public_dns }}
+  reports_storage_key: {{ .Values.cloud_private_storage_accountname }}
+  reports_storage_secret: {{ .Values.cloud_private_storage_secret }}
+  azure_storage_key: {{ .Values.cloud_private_storage_accountname }}
+  azure_storage_secret: {{ .Values.cloud_private_storage_secret }}
+  druid_storage_account_key: {{ .Values.cloud_private_storage_accountname }}
+  druid_storage_account_secret: {{ .Values.cloud_private_storage_secret }}
+  AZURE_STORAGE_ACCOUNT: {{ .Values.cloud_private_storage_accountname }}
+  AZURE_STORAGE_ACCESS_KEY: {{ .Values.cloud_private_storage_secret }}
+  PUBLIC_AZURE_STORAGE_ACCOUNT: {{ .Values.cloud_public_storage_accountname }}
+  PUBLIC_AZURE_STORAGE_ACCESS_KEY: {{ .Values.cloud_public_storage_secret }}
+  PRIVATE_REPORT_CONTAINER: {{ .Values.cloud_storage_privatereports_bucketname }}
+  PUBLIC_REPORT_CONTAINER: {{ .Values.cloud_storage_publicreports_bucketname }}
+  REPORT_BACKUP_CONTAINER: {{ .Values.portal_reports_backup }}
+  #GOOGLE_CREDENTIALS_PATH: {{ .Values.google_creds_path  }} # enable when cloud service provider is GCP
+  STORAGE_PROVIDER: {{ .Values.cloud_service_provider | upper }}
+  ENV: {{.Values.env }}
+  KAFKA_BROKER_HOST: {{ .Values.kafka_host }}
